@@ -1,107 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, {useEffect, useState} from "react";
+import {Modal, Pressable, StyleSheet, Text, View} from 'react-native';
+import {MaterialCommunityIcons} from '@expo/vector-icons';
 
-import Animated, {runOnJS, useAnimatedStyle, useSharedValue} from 'react-native-reanimated';
-import ColorPicker, {
-    BrightnessSlider,
-    HueCircular,
-    Panel1, Panel3,
-    Swatches
-} from 'reanimated-color-picker';
-import { Stack, useNavigation } from "expo-router";
-import type { ColorFormatsObject } from 'reanimated-color-picker';
-
-// Utility function to calculate contrasting colors
-const getContrastingColors = (bgColor: string) => {
-    // Safety check - if bgColor is undefined or null, default to white
-    if (!bgColor) {
-        return { 
-            buttonBgColor: 'rgba(204, 204, 204, 0.7)', 
-            buttonTextColor: '#000000' 
-        };
-    }
-
-    // Convert hex to RGB
-    const hexToRgb = (hex: string) => {
-        try {
-            const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-            const formattedHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(formattedHex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : { r: 255, g: 255, b: 255 }; // Default to white if parsing fails
-        } catch (error) {
-            console.error('Error parsing hex color:', error);
-            return { r: 255, g: 255, b: 255 }; // Default to white on error
-        }
-    };
-
-    // Calculate luminance
-    const getLuminance = (rgb: { r: number, g: number, b: number }) => {
-        return 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
-    };
-
-    // Parse the background color
-    let rgb;
-    try {
-        if (bgColor.startsWith('#')) {
-            rgb = hexToRgb(bgColor);
-        } else if (bgColor.startsWith('rgb')) {
-            // Basic parsing for rgb/rgba format
-            const matches = bgColor.match(/\d+/g);
-            if (matches && matches.length >= 3) {
-                rgb = {
-                    r: parseInt(matches[0], 10),
-                    g: parseInt(matches[1], 10),
-                    b: parseInt(matches[2], 10)
-                };
-            } else {
-                rgb = { r: 255, g: 255, b: 255 }; // Default to white
-            }
-        } else {
-            // Handle named colors by using a default approach
-            // For simplicity, we'll use a basic mapping for common colors
-            const namedColors: { [key: string]: { r: number, g: number, b: number } } = {
-                'white': { r: 255, g: 255, b: 255 },
-                'black': { r: 0, g: 0, b: 0 },
-                'red': { r: 255, g: 0, b: 0 },
-                'green': { r: 0, g: 128, b: 0 },
-                'blue': { r: 0, g: 0, b: 255 },
-                'grey': { r: 128, g: 128, b: 128 },
-                'gray': { r: 128, g: 128, b: 128 },
-            };
-            rgb = namedColors[bgColor.toLowerCase()] || { r: 255, g: 255, b: 255 };
-        }
-    } catch (error) {
-        console.error('Error parsing color:', error);
-        rgb = { r: 255, g: 255, b: 255 }; // Default to white on error
-    }
-
-    const luminance = getLuminance(rgb);
-
-    // Determine if background is light or dark
-    const isLight = luminance > 128;
-
-    // Create a button background color that's a shade of the background
-    const buttonBgColor = isLight ? 
-        `rgba(${rgb.r * 0.8}, ${rgb.g * 0.8}, ${rgb.b * 0.8}, 0.7)` : 
-        `rgba(${Math.min(rgb.r + 50, 255)}, ${Math.min(rgb.g + 50, 255)}, ${Math.min(rgb.b + 50, 255)}, 0.7)`;
-
-    // Choose text color based on button background
-    const buttonTextColor = isLight ? '#000000' : '#ffffff';
-
-    return { buttonBgColor, buttonTextColor };
-};
+import Animated, {runOnJS, useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
+import type {ColorFormatsObject} from 'reanimated-color-picker';
+import ColorPicker, {BrightnessSlider, Panel3, Swatches} from 'reanimated-color-picker';
+import {Stack} from "expo-router";
+import {getContrastingColors} from "@/lib/colour-util";
 
 export default function Index() {
     const [showModal, setShowModal] = useState(false);
     const [bgColor, setBgColor] = useState('white');
     const [buttonBgColor, setButtonBgColor] = useState('rgba(204, 204, 204, 0.7)'); // Initial button background color
     const [buttonTextColor, setButtonTextColor] = useState('#000000'); // Initial button text color
+    const [showFrontControls, setShowFrontControls] = useState(false); // State to control front controls visibility
 
     const customSwatches = [
         'white',
@@ -113,6 +26,7 @@ export default function Index() {
     ];
 
     const selectedColor = useSharedValue(customSwatches[0]);
+    const frontControlsOpacity = useSharedValue(0);
     const backgroundColorStyle = useAnimatedStyle(() => ({ backgroundColor: selectedColor.get() }));
 
     // Load saved color on app start
@@ -153,8 +67,46 @@ export default function Index() {
         runOnJS(updateColours)(newColor);
     };
 
+    // Function to show front controls with animation
+    const showControls = () => {
+        setShowFrontControls(true);
+        frontControlsOpacity.value = withTiming(1, { duration: 300 });
+    };
+
+    // Function to hide front controls with animation
+    const hideControls = () => {
+        frontControlsOpacity.value = withTiming(0, { duration: 300 }, () => {
+            runOnJS(setShowFrontControls)(false);
+        });
+    };
+
+    // Handle background press
+    const handleBackgroundPress = () => {
+        if (showFrontControls) {
+            hideControls();
+        }
+    };
+
+    // Handle background long press
+    const handleBackgroundLongPress = () => {
+        if (!showFrontControls) {
+            showControls();
+        }
+    };
+
+    const hideModal = () => {
+        setShowModal(false);
+        if (showFrontControls) {
+            runOnJS(setShowFrontControls)(false);
+        }
+    }
+
     return (
-    <View style={[styles.app, { backgroundColor: bgColor }]}>
+    <Pressable 
+        style={[styles.app, { backgroundColor: bgColor }]}
+        onPress={handleBackgroundPress}
+        onLongPress={handleBackgroundLongPress}
+    >
         <Stack.Screen
             options={{
                 headerShown: false,
@@ -162,7 +114,7 @@ export default function Index() {
         }}
             />
 
-        <Animated.View style={[backgroundColorStyle, styles.frontControlsContainer]}>
+        {showFrontControls && <Animated.View style={[backgroundColorStyle, styles.frontControlsContainer]}>
 
             <View style={[styles.frontPickerContainer, { backgroundColor: buttonBgColor }]}>
                 <Pressable
@@ -185,10 +137,10 @@ export default function Index() {
                     onChange={onColorSelect} 
                     boundedThumb
                 >
-                    <BrightnessSlider style={styles.frontBrightnessContainer}/>
+                    <BrightnessSlider style={styles.frontBrightnessContainer} adaptSpectrum={true}/>
                 </ColorPicker>
             </View>
-        </Animated.View>
+        </Animated.View> }
 
         <Modal onRequestClose={() => setShowModal(false)} visible={showModal} animationType='slide'>
             <Animated.View style={[styles.modalContainer, backgroundColorStyle]}>
@@ -200,12 +152,12 @@ export default function Index() {
                     </ColorPicker>
                 </View>
 
-                <Pressable style={[styles.closeButton, { backgroundColor: buttonBgColor }]} onPress={() => setShowModal(false)}>
+                <Pressable style={[styles.closeButton, { backgroundColor: buttonBgColor }]} onPress={hideModal}>
                     <Text style={{ color: buttonTextColor, fontWeight: 'bold' }}>Close</Text>
                 </Pressable>
             </Animated.View>
         </Modal>
-    </View>
+    </Pressable>
  );
 }
 
