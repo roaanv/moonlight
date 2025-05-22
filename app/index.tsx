@@ -7,7 +7,7 @@ import Animated, {runOnJS, useAnimatedStyle, useSharedValue} from 'react-native-
 import ColorPicker, {
     BrightnessSlider,
     HueCircular,
-    Panel1,
+    Panel1, Panel3,
     Swatches
 } from 'reanimated-color-picker';
 import { Stack, useNavigation } from "expo-router";
@@ -105,11 +105,11 @@ export default function Index() {
 
     const customSwatches = [
         'white',
-        'grey',
-        'black',
-        'red',
-        'green',
-        'blue',
+        '#999999',
+        '#777777',
+        '#555555',
+        '#333333',
+        '#111111',
     ];
 
     const selectedColor = useSharedValue(customSwatches[0]);
@@ -191,13 +191,11 @@ export default function Index() {
         </Animated.View>
 
         <Modal onRequestClose={() => setShowModal(false)} visible={showModal} animationType='slide'>
-            <Animated.View style={[styles.container, backgroundColorStyle]}>
+            <Animated.View style={[styles.modalContainer, backgroundColorStyle]}>
                 <View style={[styles.pickerContainer, { backgroundColor: buttonBgColor }]}>
-                    <ColorPicker value={selectedColor.get()} sliderThickness={20} thumbSize={24} onChange={onColorSelect} boundedThumb>
-                        <HueCircular containerStyle={[styles.hueContainer, { backgroundColor: buttonBgColor }]} thumbShape='pill'>
-                            <Panel1 style={[styles.panelStyle, { backgroundColor: buttonBgColor }]} />
-                        </HueCircular>
-                        <BrightnessSlider style={styles.brightnessContainer}/>
+                    <ColorPicker style={{ flex: 0 }} value={selectedColor.get()} sliderThickness={20} thumbSize={24} onChange={onColorSelect} boundedThumb>
+                        <Panel3 style={[styles.panelStyle, { backgroundColor: buttonBgColor }]} centerChannel={"saturation"}  />
+                        <BrightnessSlider style={styles.brightnessContainer} adaptSpectrum={true}/>
                         <Swatches style={styles.swatchesContainer} swatchStyle={styles.swatchStyle} colors={customSwatches} />
                     </ColorPicker>
                 </View>
@@ -218,15 +216,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignContent: 'center',
     },
-    container: {
+    modalContainer: {
         flex: 1,
         justifyContent: 'center',
         alignContent: 'center',
-        backgroundColor: 'orange',
     },
     pickerContainer: {
         alignSelf: 'center',
-        width: 300,
+        width: '80%',
+        flexShrink: 1,
+        flexGrow: 0,
         backgroundColor: '#fff',
         padding: 20,
         borderRadius: 20,
@@ -261,10 +260,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     panelStyle: {
-        width: '70%',
-        height: '70%',
-        alignSelf: 'center',
-        borderRadius: 16,
+        // width: '50%',
+        // height: '50%',
+        // alignSelf: 'center',
+        // borderRadius: 16,
     },
     previewTxtContainer: {
         paddingTop: 20,
@@ -273,8 +272,8 @@ const styles = StyleSheet.create({
         borderColor: '#bebdbe',
     },
     swatchesContainer: {
-        paddingTop: 20,
-        marginTop: 20,
+        paddingTop: 10,
+        marginTop: 10,
         borderTopWidth: 1,
         borderColor: '#bebdbe',
         alignItems: 'center',
