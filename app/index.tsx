@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import Animated, {runOnJS, useAnimatedStyle, useSharedValue} from 'react-native-reanimated';
 import ColorPicker, {
@@ -160,12 +161,34 @@ export default function Index() {
                 title: "foo"
         }}
             />
-        <Pressable 
-            style={[styles.openButton, { backgroundColor: buttonBgColor }]} 
-            onPress={() => setShowModal(true)}
-        >
-            <Text style={{ color: buttonTextColor, fontWeight: 'bold', textAlign: 'center' }}>Change Colour</Text>
-        </Pressable>
+
+        <Animated.View style={[backgroundColorStyle, styles.frontControlsContainer]}>
+
+            <View style={[styles.frontPickerContainer, { backgroundColor: buttonBgColor }]}>
+                <Pressable
+                    onPress={() => setShowModal(true)}
+                    style={styles.paletteButton}
+                >
+                    <MaterialCommunityIcons
+                        name="palette"
+                        size={24}
+                        color={buttonTextColor}
+                        style={{ alignSelf: 'center' }}
+                    />
+                </Pressable>
+
+                <ColorPicker 
+                    style={{ flex: 1 }}
+                    value={selectedColor.get()} 
+                    sliderThickness={20} 
+                    thumbSize={24} 
+                    onChange={onColorSelect} 
+                    boundedThumb
+                >
+                    <BrightnessSlider style={styles.frontBrightnessContainer}/>
+                </ColorPicker>
+            </View>
+        </Animated.View>
 
         <Modal onRequestClose={() => setShowModal(false)} visible={showModal} animationType='slide'>
             <Animated.View style={[styles.container, backgroundColorStyle]}>
@@ -217,6 +240,23 @@ const styles = StyleSheet.create({
 
         elevation: 10,
     },
+    frontPickerContainer: {
+        flex: 1,
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 5,
+        },
+        shadowOpacity: 0.34,
+        shadowRadius: 6.27,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        elevation: 10,
+    },
     hueContainer: {
         justifyContent: 'center',
     },
@@ -244,6 +284,8 @@ const styles = StyleSheet.create({
     brightnessContainer: {
         marginTop: 10,
     },
+    frontBrightnessContainer: {
+    },
     swatchStyle: {
         borderRadius: 20,
         height: 30,
@@ -253,14 +295,33 @@ const styles = StyleSheet.create({
         marginHorizontal: 0,
         marginVertical: 0,
     },
-    openButton: {
+    frontControlsContainer: {
         position: 'absolute',
         bottom: 40,
-        width: '60%',
-        borderRadius: 30,
-        paddingHorizontal: 40,
-        paddingVertical: 10,
-        alignSelf: 'center',
+        left: '50%',
+        transform: [{ translateX: '-50%' }],
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        width: '80%',
+    },
+    sliderWrapper: {
+        flex: 1,
+    },
+    iconButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    iconButtonOri: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
 
         shadowColor: '#000',
         shadowOffset: {
@@ -290,5 +351,12 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
 
         elevation: 5,
+    },
+    paletteButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
     },
 });
